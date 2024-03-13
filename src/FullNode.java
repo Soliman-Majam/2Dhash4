@@ -17,6 +17,9 @@ interface FullNodeInterface {
 
 public class FullNode implements FullNodeInterface {
 
+    String name = "Soliman.Majam@city.ac.uk:FirstNewFullNodeTest,1.0";
+    String address = "86.4.90.124:127.0.0.1:2244";
+
     public boolean listen(String ipAddress, int portNumber) {
 	// Implement this!
 	// Return true if the node can accept incoming connections

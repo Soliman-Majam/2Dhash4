@@ -18,6 +18,8 @@ interface TemporaryNodeInterface {
 
 public class TemporaryNode implements TemporaryNodeInterface {
 
+    String name = "Soliman.Majam@city.ac.uk:FirstNewTempNodeTest,1.0";
+
     public boolean start(String startingNodeName, String startingNodeAddress) {
 	// Implement this!
 	// Return true if the 2D#4 network can be contacted
