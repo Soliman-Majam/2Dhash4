@@ -32,10 +32,15 @@ public class TemporaryNode implements TemporaryNodeInterface {
             // name of tempnode
             this.name = "Soliman.Majam@city.ac.uk:FirstNewTempNodeTest,1.0";
 
-            // connect to startingnode
+            // connecting to startingnode
+            // splitting the address into two through the colon
+            // part before colon is the IP address
+            // part after is the port number
             String[] parts = startingNodeAddress.split(":");
             String ipAddress = parts[0];
             int portNumber = Integer.parseInt(parts[1]);
+
+            // initializing values for socket (socket object), out by reading output stream and in reading input stream
             this.socket = new Socket(ipAddress, portNumber);
             this.out = new PrintWriter(socket.getOutputStream(), true);
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -43,7 +48,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
             // START message
             out.println("START 1 " + this.name);
 
-            // wait until receives response
+            // wait until receives "SUCCESS" response
             String response = in.readLine();
             if (response != null && response.startsWith("START")) {
                 return true;
@@ -56,12 +61,12 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
     public boolean store(String key, String value) {
         try {
-            // send PUT
+            // send PUT with key and value
             out.println("PUT? 1 1");
             out.println(key);
             out.println(value);
 
-            // wait until receives response
+            // wait until receives "SUCCESS" response
             String response = in.readLine();
             if (response != null && response.equals("SUCCESS")) {
                 return true;
@@ -74,12 +79,13 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
     public String get(String key) {
         try {
-            // send GET
+            // send GET with key
             out.println("GET? 1");
             out.println(key);
 
-            // wait until receives response
+            // wait until receives "VALUE" or "NOPE" response
             String response = in.readLine();
+            // if response is "VALUE" the 'key' number of lines are read and recorded then returned
             if (response != null && response.startsWith("VALUE")) {
                 int numberOfLines = Integer.parseInt(response.split(" ")[1]);
                 StringBuilder valueBuilder = new StringBuilder();
@@ -87,6 +93,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
                     valueBuilder.append(in.readLine()).append("\n");
                 }
                 return valueBuilder.toString();
+                // if response is "NOPE" nothing happens
             } else if (response != null && response.equals("NOPE")) {
                 return null;
             }
