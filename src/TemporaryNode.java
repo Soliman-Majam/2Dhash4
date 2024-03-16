@@ -1,3 +1,7 @@
+import java.io.*;
+import java.net.*;
+import java.util.*;
+
 // IN2011 Computer Networks
 // Coursework 2023/2024
 //
@@ -18,26 +22,77 @@ interface TemporaryNodeInterface {
 
 public class TemporaryNode implements TemporaryNodeInterface {
 
-    String name = "Soliman.Majam@city.ac.uk:FirstNewTempNodeTest,1.0";
+    private String name;
+    private Socket socket;
+    private PrintWriter out;
+    private BufferedReader in;
 
     public boolean start(String startingNodeName, String startingNodeAddress) {
-	// Implement this!
-	// Return true if the 2D#4 network can be contacted
-	// Return false if the 2D#4 network can't be contacted
-	return true;
+        try {
+            // name of tempnode
+            this.name = "Soliman.Majam@city.ac.uk:FirstNewTempNodeTest,1.0";
+
+            // connect to startingnode
+            String[] parts = startingNodeAddress.split(":");
+            String ipAddress = parts[0];
+            int portNumber = Integer.parseInt(parts[1]);
+            this.socket = new Socket(ipAddress, portNumber);
+            this.out = new PrintWriter(socket.getOutputStream(), true);
+            this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            // START message
+            out.println("START 1 " + this.name);
+
+            // wait until receives response
+            String response = in.readLine();
+            if (response != null && response.startsWith("START")) {
+                return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public boolean store(String key, String value) {
-	// Implement this!
-	// Return true if the store worked
-	// Return false if the store failed
-	return true;
+        try {
+            // send PUT
+            out.println("PUT? 1 1");
+            out.println(key);
+            out.println(value);
+
+            // wait until receives response
+            String response = in.readLine();
+            if (response != null && response.equals("SUCCESS")) {
+                return true;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     public String get(String key) {
-	// Implement this!
-	// Return the string if the get worked
-	// Return null if it didn't
-	return "Not implemented";
+        try {
+            // send GET
+            out.println("GET? 1");
+            out.println(key);
+
+            // wait until receives response
+            String response = in.readLine();
+            if (response != null && response.startsWith("VALUE")) {
+                int numberOfLines = Integer.parseInt(response.split(" ")[1]);
+                StringBuilder valueBuilder = new StringBuilder();
+                for (int i = 0; i < numberOfLines; i++) {
+                    valueBuilder.append(in.readLine()).append("\n");
+                }
+                return valueBuilder.toString();
+            } else if (response != null && response.equals("NOPE")) {
+                return null;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }
