@@ -175,17 +175,21 @@ public class FullNode implements FullNodeInterface {
                     out.println("Dummy Node Address");
 
                 } else if (request.equals("ECHO?")) {
-                    // Handle ECHO request
+                    // send reverse
                     out.println("OHCE");
 
+                } else if (request.equals("END")) {
+                    out.println("END");
+                    break;
                 } else {
-                    // Invalid request
-                    out.println("END Invalid request");
+                    // invalid request
+                    out.println("END");
+                    
                     break;
                 }
             }
 
-            // Close the connection
+            // close the connection
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
