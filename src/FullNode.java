@@ -1,5 +1,6 @@
 import java.io.*;
 import java.net.*;
+import java.sql.SQLOutput;
 import java.util.*;
 
 // IN2011 Computer Networks
@@ -121,7 +122,7 @@ public class FullNode implements FullNodeInterface {
                     String value = valueBuilder.toString();
 
                     // Compute the hashID for the value to be stored
-                    byte[] valueHashID = new byte[0];
+                    byte[] valueHashID;
                     try {
                         valueHashID = HashID.computeHashID(value);
                     } catch (Exception e) {
@@ -132,9 +133,8 @@ public class FullNode implements FullNodeInterface {
                     boolean isClosest = isClosestNode(valueHashID);
 
                     if (isClosest) {
-                        // store (key, value) pair and respond "SUCCESS"
-                        this.networkMap.put(key, value);
-                        out.println("SUCCESS");
+                        // check if 3 nodes don't already have the same distance
+                        addToMap(key, value);
                     } else {
                         // "FAILED" as this node is not one of three closest nodes
                         out.println("FAILED");
@@ -184,7 +184,7 @@ public class FullNode implements FullNodeInterface {
                 } else {
                     // invalid request
                     out.println("END");
-                    
+
                     break;
                 }
             }
@@ -193,6 +193,8 @@ public class FullNode implements FullNodeInterface {
             clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -259,5 +261,35 @@ public class FullNode implements FullNodeInterface {
         // This method could retrieve the distance threshold from some configuration or settings
         // For simplicity, let's assume a fixed threshold value for demonstration purposes
         return 100; // For example, a threshold of 100
+    }
+
+    public void addToMap(String key, String value) throws Exception {
+        int count = 0; // keeps track of amount of nodes with same distance
+        byte[] valueHashID = HashID.computeHashID(value); // calculates hash value of value
+
+        // start for loop iterating over the values... hashing them.. then commparing distance.. for every value
+        for (String v : networkMap.values()) {
+            String existingValue = networkMap.get(v);
+            byte[] existingValueHashID = HashID.computeHashID(existingValue);
+
+            // calculate distance between HashID of current value and new value
+            int distance = calculateDistance(existingValueHashID, valueHashID);
+
+            // if distance is 0 means they're the same, increment count
+            if (distance == 0) {
+                count++;
+
+                // if count == then 3 nodes have the same distance already, exit method without adding the key, value pair
+                if (count >= 3) {
+                    System.out.println("Three nodes with same distance already present");
+                    System.out.println("FAILED");
+                    return;
+                }
+            }
+        }
+
+        // if all pairs have been checked and count is less than 3, add the new key, value pair
+        networkMap.put(key, value);
+        System.out.println("SUCCESS");
     }
 }
