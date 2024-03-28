@@ -32,6 +32,8 @@ public class TemporaryNode implements TemporaryNodeInterface {
             // name of tempnode
             this.name = "happytempnode:FirstNewTempNodeTest,1.0";
 
+            System.out.println("Address passed to TempNode: " + startingNodeAddress);
+
             // connecting to startingnode
             // splitting the address into two through the colon
             // part before colon is the IP address
@@ -40,15 +42,24 @@ public class TemporaryNode implements TemporaryNodeInterface {
             String ipAddress = parts[0];
             int portNumber = Integer.parseInt(parts[1]);
 
+            System.out.println("IP Address: " + ipAddress + ", port number: " + portNumber + ". SUCCESS");
+
             // initializing values for socket (socket object), out by reading output stream and in reading input stream
             this.socket = new Socket(ipAddress, portNumber);
+            System.out.println("Socket created");
             this.out = new PrintWriter(socket.getOutputStream(), true);
+            System.out.println("Output stream..");
             this.in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            System.out.println("Input stream..");
+            System.out.println("SUCCESS");
+
+            System.out.println(socket.isConnected());
 
             // START message
-            out.println("START 1 " + this.name);
+            out.println("START 1 " + this.name + '\n');
+            System.out.println("did you see the start message?");
 
-            // wait until receives "SUCCESS" response
+            // wait until receives "START" response
             String response = in.readLine();
             if (response != null && response.startsWith("START")) {
                 return true;

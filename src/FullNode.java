@@ -63,10 +63,18 @@ public class FullNode implements FullNodeInterface {
             // address made up of ip address and port number
             String[] parts = startingNodeAddress.split(":");
             String ipAddress = parts[0];
+
+            if (parts.length != 2) {
+                System.err.println("Invalid startingNodeAddress format: " + startingNodeAddress);
+                return;
+            }
+
             int portNumber = Integer.parseInt(parts[1]);
             Socket socket = new Socket(ipAddress, portNumber);
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+
+            socket.connect(); // CONNECT IT NOW REMEMMBER
 
             // START message
             out.println("START 1 " + this.name);
@@ -180,11 +188,13 @@ public class FullNode implements FullNodeInterface {
 
                 } else if (request.equals("END")) {
                     out.println("END");
+                    clientSocket.close();
                     break;
+
                 } else {
                     // invalid request
                     out.println("END");
-
+                    clientSocket.close();
                     break;
                 }
             }
@@ -258,9 +268,8 @@ public class FullNode implements FullNodeInterface {
     }
 
     private int getCurrentNodeDistanceThreshold() {
-        // This method could retrieve the distance threshold from some configuration or settings
-        // For simplicity, let's assume a fixed threshold value for demonstration purposes
-        return 100; // For example, a threshold of 100
+        // i don't knwo what the threshold would be
+        return 100;
     }
 
     public void addToMap(String key, String value) throws Exception {
