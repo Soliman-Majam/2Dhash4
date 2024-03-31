@@ -53,7 +53,7 @@ public class FullNode implements FullNodeInterface {
         }
         return false;
     }
-    
+
     public void handleIncomingConnections(String startingNodeName, String startingNodeAddress) {
         try {
             // name of node
@@ -74,10 +74,8 @@ public class FullNode implements FullNodeInterface {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
-            socket.connect(); // CONNECT IT NOW REMEMMBER
-
             // START message
-            out.println("START 1 " + this.name);
+            out.print("START 1 " + this.name + '\n');
 
             // wait until receives 'START' response
             String response = in.readLine();
@@ -247,7 +245,7 @@ public class FullNode implements FullNodeInterface {
         byte[] data = new byte[len / 2];
         for (int i = 0; i < len; i += 2) {
             data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i+1), 16));
+                    + Character.digit(s.charAt(i + 1), 16));
         }
         return data;
     }
@@ -274,15 +272,19 @@ public class FullNode implements FullNodeInterface {
 
     public void addToMap(String key, String value) throws Exception {
         int count = 0; // keeps track of amount of nodes with same distance
-        byte[] valueHashID = HashID.computeHashID(value); // calculates hash value of value
+        String valueHashID = HashID.computeHashID(value); // calculates hash value of value
 
         // start for loop iterating over the values... hashing them.. then commparing distance.. for every value
-        for (String v : networkMap.values()) {
-            String existingValue = networkMap.get(v);
-            byte[] existingValueHashID = HashID.computeHashID(existingValue);
+        for (Map.Entry<String, String> entry : networkMap.entrySet()) {
+            String existingValue = entry.getValue();
+            String existingValueHashID = HashID.computeHashID(existingValue);
+
+            // Convert hash IDs from String to byte arrays
+            byte[] valueHashIDBytes = hexStringToByteArray(valueHashID);
+            byte[] existingValueHashIDBytes = hexStringToByteArray(existingValueHashID);
 
             // calculate distance between HashID of current value and new value
-            int distance = calculateDistance(existingValueHashID, valueHashID);
+            int distance = calculateDistance(existingValueHashIDBytes, valueHashIDBytes);
 
             // if distance is 0 means they're the same, increment count
             if (distance == 0) {

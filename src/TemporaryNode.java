@@ -30,7 +30,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
     public boolean start(String startingNodeName, String startingNodeAddress) {
         try {
             // name of tempnode
-            this.name = "happytempnode:FirstNewTempNodeTest,1.0";
+            this.name = "happytempnode:FirstNewTempNodeTest,1.0 + '\n'";
 
             System.out.println("Address passed to TempNode: " + startingNodeAddress);
 
@@ -56,7 +56,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
             System.out.println(socket.isConnected());
 
             // START message
-            out.println("START 1 " + this.name + '\n');
+            out.print("START 1 " + this.name + '\n');
             System.out.println("did you see the start message?");
 
             // wait until receives "START" response
