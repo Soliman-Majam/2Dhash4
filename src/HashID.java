@@ -11,11 +11,11 @@ public class HashID {
 
     public static String computeHashID(String line) throws Exception {
 		if (line.endsWith("\n")) {
-			// Calculate SHA-256 hash
+			// calculate SHA-256 hash
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			byte[] hashBytes = md.digest(line.getBytes(StandardCharsets.UTF_8));
 
-			// Convert byte array to hexadecimal string
+			// byte array to hexadecimal string
 			StringBuilder hexString = new StringBuilder();
 			for (byte b : hashBytes) {
 				String hex = Integer.toHexString(0xff & b);

@@ -30,7 +30,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
     public boolean start(String startingNodeName, String startingNodeAddress) {
         try {
             // name of tempnode
-            this.name = "happytempnode:FirstNewTempNodeTest,1.0 + '\n'";
+            this.name = "happytempnode:FirstNewTempNodeTest,1.0";
 
             System.out.println("Address passed to TempNode: " + startingNodeAddress);
 

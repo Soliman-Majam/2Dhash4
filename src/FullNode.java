@@ -128,7 +128,7 @@ public class FullNode implements FullNodeInterface {
                     String value = valueBuilder.toString();
 
                     // Compute the hashID for the value to be stored
-                    byte[] valueHashID;
+                    String valueHashID;
                     try {
                         valueHashID = HashID.computeHashID(value);
                     } catch (Exception e) {
@@ -206,13 +206,12 @@ public class FullNode implements FullNodeInterface {
         }
     }
 
-    private boolean isClosestNode(byte[] valueHashID) {
+    private boolean isClosestNode(String valueHashID) {
         // get the distances between valueHashID and hashIDs of nodes in the network map
         List<Integer> distances = new ArrayList<>();
         for (String nodeHashID : networkMap.keySet()) {
-            byte[] nodeHashIDBytes = hexStringToByteArray(nodeHashID); // String hashID to byte array conversion
-            // method calculates distance between two bytes, adds the distance calculated to distances
-            distances.add(calculateDistance(nodeHashIDBytes, valueHashID));
+            // method calculates distance between two strings, adds the distance calculated to distances
+            distances.add(calculateDistance(nodeHashID, valueHashID));
         }
 
         // sort distances in ascending order
@@ -250,16 +249,16 @@ public class FullNode implements FullNodeInterface {
         return data;
     }
 
-    private int calculateDistance(byte[] hashID1, byte[] hashID2) {
+    private int calculateDistance(String hashID1, String hashID2) {
         int distance = 0;
-        for (int i = 0; i < hashID1.length; i++) {
-            // bitwise XOR of corresponding bytes (turns it into a series of 1s and 0s)
-            int xorResult = hashID1[i] ^ hashID2[i];
+        for (int i = 0; i < hashID1.length(); i++) {
+            // bitwise XOR of hex chars
+            int xorResult = Character.digit(hashID1.charAt(i), 16) ^ Character.digit(hashID2.charAt(i), 16);
 
-            // count leading zeroes to work out which leading bits are matching
+            // count leading matching 0's
             int leadingZeros = Integer.numberOfLeadingZeros(xorResult);
 
-            // computer distance based on formula we got (256 - matching leading bits)
+            // compute distance based on formula (256 - matching leading bits)
             distance += 256 - leadingZeros;
         }
         return distance;
@@ -279,12 +278,8 @@ public class FullNode implements FullNodeInterface {
             String existingValue = entry.getValue();
             String existingValueHashID = HashID.computeHashID(existingValue);
 
-            // Convert hash IDs from String to byte arrays
-            byte[] valueHashIDBytes = hexStringToByteArray(valueHashID);
-            byte[] existingValueHashIDBytes = hexStringToByteArray(existingValueHashID);
-
             // calculate distance between HashID of current value and new value
-            int distance = calculateDistance(existingValueHashIDBytes, valueHashIDBytes);
+            int distance = calculateDistance(existingValueHashID, valueHashID);
 
             // if distance is 0 means they're the same, increment count
             if (distance == 0) {
