@@ -36,18 +36,12 @@ public class FullNode implements FullNodeInterface {
 
             // listen for any connections with new ServerSocket
             ServerSocket serverSocket = new ServerSocket(portNumber);
-            new Thread(() -> {
-                try {
-                    while (true) {
-                        Socket clientSocket = serverSocket.accept();
-                        handleConnection(clientSocket);
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }).start();
+            System.out.println("listened successfully");
+            serverSocket.close();
+
 
             return true;
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -56,6 +50,7 @@ public class FullNode implements FullNodeInterface {
 
     public void handleIncomingConnections(String startingNodeName, String startingNodeAddress) {
         try {
+            System.out.println("Handling connection..");
             // name of node
             this.name = "Soliman.Majam@city.ac.uk:FirstNewFullNodeTest,1.0";
 
@@ -70,20 +65,22 @@ public class FullNode implements FullNodeInterface {
             }
 
             int portNumber = Integer.parseInt(parts[1]);
-            Socket socket = new Socket(ipAddress, portNumber);
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
+            ServerSocket socket = new ServerSocket(portNumber);
+            System.out.println("Server socket created");
+            Socket clientSocket = socket.accept();
+            Writer writer = new OutputStreamWriter(clientSocket.getOutputStream());
+            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             // START message
-            out.print("START 1 " + this.name + '\n');
+            serverWrite(writer,"START 1 " + this.name);
+            writer.flush();
 
             // wait until receives 'START' response
             String response = in.readLine();
             if (response != null && response.startsWith("START")) {
                 // sned 'NOTIFY' request
-                out.println("NOTIFY");
-                out.println(this.name);
-                out.println(this.address);
+                writer.write("NOTIFY");
+                writer.write(this.name);
+                writer.write(this.address);
 
                 // wait until receives 'NOTIFIED' response
                 response = in.readLine();
@@ -91,10 +88,13 @@ public class FullNode implements FullNodeInterface {
                     // if response successful, initialize that network hash map and add the connected node to it
                     this.networkMap = new HashMap<>();
                     this.networkMap.put(startingNodeName, startingNodeAddress);
+
+                    handleConnection(clientSocket);
                 }
             }
 
             // end connection
+            clientSocket.close();
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -104,8 +104,11 @@ public class FullNode implements FullNodeInterface {
     private void handleConnection(Socket clientSocket) {
         try {
             // recognise requests and responses
+            //BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            //PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+
+            Writer writer = new OutputStreamWriter(clientSocket.getOutputStream());
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
             // different request possibilities
             String request;
@@ -141,9 +144,12 @@ public class FullNode implements FullNodeInterface {
                     if (isClosest) {
                         // check if 3 nodes don't already have the same distance
                         addToMap(key, value);
+                        serverWrite(writer, "SUCCESS");
+
                     } else {
                         // "FAILED" as this node is not one of three closest nodes
-                        out.println("FAILED");
+                        //out.println("FAILED");
+                        serverWrite(writer, "FAILED");
                     }
 
                 } else if (request.startsWith("GET?")) {
@@ -166,32 +172,33 @@ public class FullNode implements FullNodeInterface {
                         String[] valueLines = value.split("\n");
 
                         // send 'VALUE' and the number of lines
-                        out.println("VALUE " + valueLines.length);
-                        out.print(value); // then the actual value
-                        out.println(); // + newline
+                        serverWrite(writer,"VALUE " + valueLines.length);
+                        serverWrite(writer, value); // then the actual value
                     } else {
                         // if false send 'NOPE'
-                        out.println("NOPE");
+                        serverWrite(writer,"NOPE");
                     }
                 } else if (request.equals("NEAREST?")) {
                     // Handle NEAREST request
                     // For simplicity, assume it returns a dummy response
-                    out.println("NODES 1");
-                    out.println("Dummy Node Name");
-                    out.println("Dummy Node Address");
+                    serverWrite(writer,"NODES 1");
+                    serverWrite(writer,"Dummy Node Name");
+                    serverWrite(writer,"Dummy Node Address");
 
                 } else if (request.equals("ECHO?")) {
                     // send reverse
-                    out.println("OHCE");
+                    serverWrite(writer,"OHCE");
 
                 } else if (request.equals("END")) {
-                    out.println("END");
+                    serverWrite(writer,"END");
                     clientSocket.close();
                     break;
 
                 } else {
                     // invalid request
-                    out.println("END");
+                    System.out.println("INVALID");
+                    System.out.println(request);
+                    serverWrite(writer,"END");
                     clientSocket.close();
                     break;
                 }
@@ -297,5 +304,17 @@ public class FullNode implements FullNodeInterface {
         // if all pairs have been checked and count is less than 3, add the new key, value pair
         networkMap.put(key, value);
         System.out.println("SUCCESS");
+    }
+
+    private boolean serverWrite(Writer writer, String message) {
+
+        try {
+            writer.write(message + '\n');
+            System.out.println(name + ": " + message);
+            return true;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
