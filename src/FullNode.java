@@ -29,6 +29,9 @@ public class FullNode implements FullNodeInterface {
     //hash map for storing other nodes' address
     private Map<String, String> networkMap;
 
+    private Writer writer;
+    private BufferedReader in;
+
     public boolean listen(String ipAddress, int portNumber) {
         try {
             // set node address
@@ -65,22 +68,22 @@ public class FullNode implements FullNodeInterface {
             }
 
             int portNumber = Integer.parseInt(parts[1]);
-            ServerSocket socket = new ServerSocket(portNumber);
+            ServerSocket socket = new ServerSocket();
+            socket.bind(new InetSocketAddress(ipAddress, portNumber));
             System.out.println("Server socket created");
             Socket clientSocket = socket.accept();
-            Writer writer = new OutputStreamWriter(clientSocket.getOutputStream());
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            writer = new OutputStreamWriter(clientSocket.getOutputStream());
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             // START message
             serverWrite(writer,"START 1 " + this.name);
-            writer.flush();
 
             // wait until receives 'START' response
             String response = in.readLine();
-            if (response != null && response.startsWith("START")) {
+            if (response != null && response.startsWith("START ")) {
                 // sned 'NOTIFY' request
-                writer.write("NOTIFY");
-                writer.write(this.name);
-                writer.write(this.address);
+                serverWrite(writer, "NOTIFY");
+                serverWrite(writer, this.name);
+                serverWrite(writer, this.address);
 
                 // wait until receives 'NOTIFIED' response
                 response = in.readLine();
@@ -91,6 +94,8 @@ public class FullNode implements FullNodeInterface {
 
                     handleConnection(clientSocket);
                 }
+                System.out.println("Now handling connection" + '\n');
+                handleConnection(clientSocket);
             }
 
             // end connection
@@ -103,18 +108,16 @@ public class FullNode implements FullNodeInterface {
 
     private void handleConnection(Socket clientSocket) {
         try {
-            // recognise requests and responses
-            //BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-            //PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
-            Writer writer = new OutputStreamWriter(clientSocket.getOutputStream());
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            writer = new OutputStreamWriter(clientSocket.getOutputStream());
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             // different request possibilities
             String request;
             while ((request = in.readLine()) != null) {
+
                 // if 'PUT?' request then
-                if (request.startsWith("PUT?")) {
+                if (request.startsWith("PUT? ")) {
                     // read values and keys
                     String[] parts = request.split(" ");
                     int keyLines = Integer.parseInt(parts[1]);
@@ -152,10 +155,14 @@ public class FullNode implements FullNodeInterface {
                         serverWrite(writer, "FAILED");
                     }
 
-                } else if (request.startsWith("GET?")) {
-                    // if 'GET?' request then read lines
+                }else if (request.startsWith("GET? ")) {
+                    System.out.println(request);
                     String[] parts = request.split(" ");
                     int keyLines = Integer.parseInt(parts[1]);
+
+                    // consume newline character
+                    in.readLine();
+
                     StringBuilder keyBuilder = new StringBuilder();
                     for (int i = 0; i < keyLines; i++) {
                         keyBuilder.append(in.readLine()).append("\n");
@@ -172,11 +179,11 @@ public class FullNode implements FullNodeInterface {
                         String[] valueLines = value.split("\n");
 
                         // send 'VALUE' and the number of lines
-                        serverWrite(writer,"VALUE " + valueLines.length);
+                        serverWrite(writer, "VALUE " + valueLines.length);
                         serverWrite(writer, value); // then the actual value
                     } else {
                         // if false send 'NOPE'
-                        serverWrite(writer,"NOPE");
+                        serverWrite(writer, "NOPE");
                     }
                 } else if (request.equals("NEAREST?")) {
                     // Handle NEAREST request
@@ -191,21 +198,19 @@ public class FullNode implements FullNodeInterface {
 
                 } else if (request.equals("END")) {
                     serverWrite(writer,"END");
-                    clientSocket.close();
-                    break;
+                    //clientSocket.close();
+                    return;
 
                 } else {
                     // invalid request
-                    System.out.println("INVALID");
-                    System.out.println(request);
+                    serverWrite(writer, "INVALID");
+                    System.out.println("Invalid Request: " + request);
                     serverWrite(writer,"END");
-                    clientSocket.close();
-                    break;
+                    //clientSocket.close();
+                    return;
                 }
             }
 
-            // close the connection
-            clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (Exception e) {
@@ -311,6 +316,7 @@ public class FullNode implements FullNodeInterface {
         try {
             writer.write(message + '\n');
             System.out.println(name + ": " + message);
+            writer.flush();
             return true;
         } catch (Exception e) {
             e.printStackTrace();

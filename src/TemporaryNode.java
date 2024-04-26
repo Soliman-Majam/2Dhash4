@@ -60,7 +60,6 @@ public class TemporaryNode implements TemporaryNodeInterface {
             // START message
             clientWrite(writer,"START 1 " + this.name); //  IT GOES UP TO HERE
             System.out.println("did you see the start message?");
-            writer.flush();
 
             // wait until receives "START" response
             String response = reader.readLine();
@@ -104,23 +103,33 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
     public String get(String key) {
         try {
-            // send GET with key
-            clientWrite(writer, "GET? 1");
-            clientWrite(writer, key);
+            // Split the key into lines
+            String[] keyLines = key.split("\n");
 
-            // wait until receives "VALUE" or "NOPE" response
+            // Send the GET? request
+            clientWrite(writer, "GET? " + keyLines.length);
+
+            // Send a newline character before sending the key lines
+            clientWrite(writer, "");
+
+            for (String line : keyLines) {
+                clientWrite(writer, line);
+            }
+
+            // Wait for the response
             String response = reader.readLine();
-            // if response is "VALUE" the 'key' number of lines are read and recorded then returned
+
+            // If the response starts with "VALUE", read the value
             if (response != null && response.startsWith("VALUE")) {
-                int numberOfLines = Integer.parseInt(response.split(" ")[1]);
+                String[] parts = response.split(" ");
+                int valueLines = Integer.parseInt(parts[1]);
                 StringBuilder valueBuilder = new StringBuilder();
-                for (int i = 0; i < numberOfLines; i++) {
+                for (int i = 0; i < valueLines; i++) {
                     valueBuilder.append(reader.readLine()).append("\n");
                 }
-                writer.flush();
-                return valueBuilder.toString();
-                // if response is "NOPE" nothing happens
+                return valueBuilder.toString().trim();
             } else if (response != null && response.equals("NOPE")) {
+                // If the response is "NOPE", the key was not found
                 return null;
             }
         } catch (IOException e) {
@@ -134,6 +143,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
         try {
             writer.write(message + '\n');
             System.out.println(name + ": " + message);
+            writer.flush();
             return true;
         } catch (Exception e) {
             e.printStackTrace();
