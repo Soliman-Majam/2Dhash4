@@ -28,9 +28,10 @@ public class FullNode implements FullNodeInterface {
     private String address;
     //hash map for storing other nodes' address
     private Map<String, String> networkMap;
-
     private Writer writer;
     private BufferedReader in;
+    private ServerSocket server;
+    private Socket clientSocket;
 
     public boolean listen(String ipAddress, int portNumber) {
         try {
@@ -38,9 +39,9 @@ public class FullNode implements FullNodeInterface {
             this.address = ipAddress + ":" + portNumber;
 
             // listen for any connections with new ServerSocket
-            ServerSocket serverSocket = new ServerSocket(portNumber);
+            server = new ServerSocket(portNumber);
             System.out.println("listened successfully");
-            serverSocket.close();
+            server.close();
 
 
             return true;
@@ -68,15 +69,15 @@ public class FullNode implements FullNodeInterface {
             }
 
             int portNumber = Integer.parseInt(parts[1]);
-            ServerSocket socket = new ServerSocket();
-            socket.bind(new InetSocketAddress(ipAddress, portNumber));
+            server = new ServerSocket();
+            server.bind(new InetSocketAddress(ipAddress, portNumber));
             System.out.println("Server socket created");
-            Socket clientSocket = socket.accept();
+            clientSocket = server.accept();
             System.out.println("Client socket created");
             writer = new OutputStreamWriter(clientSocket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             // START message
-            serverWrite(writer,"START 1 " + this.name);
+            serverWrite("START 1 " + this.name);
 
             networkMap = new HashMap<>();
 
@@ -85,9 +86,9 @@ public class FullNode implements FullNodeInterface {
             if (response != null && response.startsWith("START ")) {
                 System.out.println("Message accepted");
                 // sned 'NOTIFY' request
-                serverWrite(writer, "NOTIFY");
-                serverWrite(writer, this.name);
-                serverWrite(writer, this.address);
+                serverWrite("NOTIFY");
+                serverWrite(this.name);
+                serverWrite(this.address);
 
                 // wait until receives 'NOTIFIED' response
                 response = in.readLine();
@@ -96,12 +97,12 @@ public class FullNode implements FullNodeInterface {
                     networkMap.put(startingNodeName, startingNodeAddress);
                 }
                 System.out.println("Connection established, ready for incoming requests: " + '\n');
-                requestHandler(clientSocket);
+                requestHandler();
             }
 
             // end connection
             clientSocket.close();
-            socket.close();
+            server.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -126,11 +127,8 @@ public class FullNode implements FullNodeInterface {
 
 
 
-    private void requestHandler(Socket clientSocket) {
+    private void requestHandler() {
         try {
-            writer = new OutputStreamWriter(clientSocket.getOutputStream());
-            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
             String line;
             while ((line = in.readLine()) != null) {
                 System.out.println("This is the current line being read: " + line);
@@ -170,11 +168,11 @@ public class FullNode implements FullNodeInterface {
                     if (isClosest) {
                         // check if 3 nodes don't already have the same distance
                         addToMap(key, value);
-                        serverWrite(writer, "SUCCESS");
+                        serverWrite("SUCCESS");
 
                     } else {
                         // "FAILED" as this node is not one of three closest nodes
-                        serverWrite(writer, "FAILED");
+                        serverWrite("FAILED");
                     }
 
                 } else if (line.startsWith("GET? ")) {
@@ -198,33 +196,33 @@ public class FullNode implements FullNodeInterface {
                         String[] valueLines = value.split("\n");
 
                         // send 'VALUE' and the number of lines
-                        serverWrite(writer, "VALUE " + valueLines.length);
-                        serverWrite(writer, value); // then the actual value
+                        serverWrite("VALUE " + valueLines.length);
+                        serverWrite(value); // then the actual value
                     } else {
                         // if not send 'NOPE'
-                        serverWrite(writer, "NOPE");
+                        serverWrite("NOPE");
                     }
                 }
                 else if (line.equals("NEAREST?")) {
                     // handle NEAREST request
                     // for now returns a dummy response
-                    serverWrite(writer,"NODES 1");
-                    serverWrite(writer,"Dummy Node Name");
-                    serverWrite(writer,"Dummy Node Address");
+                    serverWrite("NODES 1");
+                    serverWrite("Dummy Node Name");
+                    serverWrite("Dummy Node Address");
 
                 } else if (line.equals("ECHO?")) {
                     // send reverse
-                    serverWrite(writer,"OHCE");
+                    serverWrite("OHCE");
 
                 } else if (line.equals("END")) {
-                    serverWrite(writer,"END");
+                    serverWrite("END");
                     return;
                 }
                  else {
                     // invalid request
-                    serverWrite(writer, "INVALID");
+                    serverWrite("INVALID");
                     System.out.println("Invalid Request: " + line);
-                    serverWrite(writer,"END");
+                    serverWrite("END");
                     return;
                 }
             }
@@ -468,7 +466,7 @@ public class FullNode implements FullNodeInterface {
         System.out.println("SUCCESS");
     }
 
-    private boolean serverWrite(Writer writer, String message) {
+    private boolean serverWrite(String message) {
 
         try {
             writer.write(message + '\n');

@@ -25,8 +25,8 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
     private String name;
     private Socket socket;
-    Writer writer;
-    BufferedReader reader;
+    private Writer writer;
+    private BufferedReader reader;
 
     public boolean start(String startingNodeName, String startingNodeAddress) {
         try {
@@ -57,7 +57,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
             System.out.println("Is socket connected? " + socket.isConnected());
 
             // START message
-            clientWrite(writer,"START 1 " + this.name);
+            clientWrite("START 1 " + this.name);
             System.out.println("did you see the start message?");
 
             // wait until receives "START" response
@@ -78,16 +78,16 @@ public class TemporaryNode implements TemporaryNodeInterface {
             String[] valueLines = value.split("\n");
 
             // send first line of PUT request
-            clientWrite(writer, "PUT? " + keyLines.length + " " + valueLines.length);
+            clientWrite("PUT? " + keyLines.length + " " + valueLines.length);
 
             // send key line/s
             for (String line : keyLines) {
-                clientWrite(writer, line);
+                clientWrite(line);
             }
 
             // send value line/s
             for (String line : valueLines) {
-                clientWrite(writer, line);
+                clientWrite(line);
             }
 
             // wait for the response
@@ -103,15 +103,15 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
     public String get(String key) {
         try {
+
             // Split the key into lines
             String[] keyLines = key.split("\n");
 
-            delayMethod(3);
             // Send the GET? request
-            clientWrite(writer, "GET? " + keyLines.length);
+            clientWrite("GET? " + keyLines.length);
 
             for (String line : keyLines) {
-                clientWrite(writer, line);
+                clientWrite(line);
             }
 
             // Wait for the response
@@ -136,7 +136,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
         return null;
     }
 
-    private boolean clientWrite(Writer writer, String message) {
+    private boolean clientWrite(String message) {
         try {
             writer.write(message + '\n');
             System.out.println(name + ": " + message);
