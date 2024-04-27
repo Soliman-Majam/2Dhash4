@@ -286,7 +286,7 @@ public class FullNode implements FullNodeInterface {
         // start for loop iterating over the values... hashing them.. then commparing distance.. for every value
         for (Map.Entry<String, String> entry : networkMap.entrySet()) {
             String existingValue = entry.getValue();
-            String existingValueHashID = HashID.computeHashID(existingValue);
+            String existingValueHashID = HashID.computeHashID(existingValue + '\n');
 
             // calculate distance between HashID of current value and new value
             int distance = calculateDistance(existingValueHashID, valueHashID);
