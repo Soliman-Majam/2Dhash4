@@ -93,11 +93,9 @@ public class FullNode implements FullNodeInterface {
                     // if response successful, initialize that network hash map and add the connected node to it
                     this.networkMap = new HashMap<>();
                     this.networkMap.put(startingNodeName, startingNodeAddress);
-
-                    handleRequests(clientSocket);
                 }
                 System.out.println("Connection established, ready for incoming requests: " + '\n');
-                handleRequests(clientSocket);
+                requestHandler(clientSocket);
             }
 
             // end connection
@@ -108,9 +106,27 @@ public class FullNode implements FullNodeInterface {
         }
     }
 
-    private void handleRequests(Socket clientSocket) {
-        try {
+//    public void readResponse(Socket clientSocket) throws IOException {
+//        in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+//        try {
+//            while (clientSocket.isConnected()) {
+//                String request = in.readLine();
+//                if (request != null) {
+//                    System.out.println(request);
+//                    handleRequests(clientSocket, request);
+//                }
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
+
+
+
+
+    private void requestHandler(Socket clientSocket) {
+        try {
             writer = new OutputStreamWriter(clientSocket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
@@ -119,7 +135,7 @@ public class FullNode implements FullNodeInterface {
             while ((line = in.readLine()) != null) {
                 requestBuilder.append(line).append("\n");
 
-                // Check if the request is complete
+                // check if request is complete
                 String request = requestBuilder.toString().trim();
 
                 // if 'PUT?' request then
@@ -139,7 +155,7 @@ public class FullNode implements FullNodeInterface {
                     String key = keyBuilder.toString();
                     String value = valueBuilder.toString();
 
-                    // Compute the hashID for the value to be stored
+                    // compute hashID for the value to be stored
                     String valueHashID;
                     try {
                         valueHashID = HashID.computeHashID(value);
@@ -184,12 +200,12 @@ public class FullNode implements FullNodeInterface {
                         serverWrite(writer, "VALUE " + valueLines.length);
                         serverWrite(writer, value); // then the actual value
                     } else {
-                        // if false send 'NOPE'
+                        // if not send 'NOPE'
                         serverWrite(writer, "NOPE");
                     }
                 } else if (request.equals("NEAREST?")) {
                     // handle NEAREST request
-                    // for now assume it returns a dummy response
+                    // for now returns a dummy response
                     serverWrite(writer,"NODES 1");
                     serverWrite(writer,"Dummy Node Name");
                     serverWrite(writer,"Dummy Node Address");
@@ -200,7 +216,6 @@ public class FullNode implements FullNodeInterface {
 
                 } else if (request.equals("END")) {
                     serverWrite(writer,"END");
-                    //clientSocket.close();
                     return;
 
                 } else {
@@ -208,17 +223,140 @@ public class FullNode implements FullNodeInterface {
                     serverWrite(writer, "INVALID");
                     System.out.println("Invalid Request: " + request);
                     serverWrite(writer,"END");
-                    //clientSocket.close();
                     return;
                 }
             }
 
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
+
+
+//    private void handleRequests(Socket clientSocket) {
+//        try {
+//            writer = new OutputStreamWriter(clientSocket.getOutputStream());
+//            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+//
+//            StringBuilder requestBuilder = new StringBuilder();
+//            String line;
+//
+//            try {
+//
+//                while ((line = in.readLine()) != null) {
+//                    requestBuilder.append(line);
+//                    requestBuilder.append(" ");
+//                    if (line.isEmpty()) {
+//                        // empty line means end of a request
+//                        String request = requestBuilder.toString().trim();
+//
+//                        if (request.startsWith("PUT? ")) {
+//                            // read values and keys
+//                            String[] parts = request.split(" ");
+//                            int keyLines = Integer.parseInt(parts[1]);
+//                            int valueLines = Integer.parseInt(parts[2]);
+//                            StringBuilder keyBuilder = new StringBuilder();
+//                            StringBuilder valueBuilder = new StringBuilder();
+//                            for (int i = 0; i < keyLines; i++) {
+//                                keyBuilder.append(in.readLine()).append("\n");
+//                            }
+//                            for (int i = 0; i < valueLines; i++) {
+//                                valueBuilder.append(in.readLine()).append("\n");
+//                            }
+//                            String key = keyBuilder.toString();
+//                            String value = valueBuilder.toString();
+//
+//                            // compute hashID for the value to be stored
+//                            String valueHashID;
+//                            try {
+//                                valueHashID = HashID.computeHashID(value);
+//                            } catch (Exception e) {
+//                                throw new RuntimeException(e);
+//                            }
+//
+//                            // check networkMap for if valueHashID is one of the closest nodes
+//                            boolean isClosest = isClosestNode(valueHashID);
+//
+//                            if (isClosest) {
+//                                // check if 3 nodes don't already have the same distance
+//                                addToMap(key, value);
+//                                serverWrite(writer, "SUCCESS");
+//
+//                            } else {
+//                                // "FAILED" as this node is not one of three closest nodes
+//                                serverWrite(writer, "FAILED");
+//                            }
+//
+//                        } else if (request.startsWith("GET? ")) {
+//                            String[] parts = request.split(" ");
+//                            int keyLines = Integer.parseInt(parts[1]);
+//
+//                            StringBuilder keyBuilder = new StringBuilder();
+//                            String[] requestLines = request.split("\n");
+//                            for (int i = 1; i <= keyLines; i++) {
+//                                keyBuilder.append(requestLines[i]).append("\n");
+//                            }
+//                            String key = keyBuilder.toString().trim();
+//
+//                            // check if key exists in network map
+//                            if (networkMap.containsKey(key)) {
+//                                // if true, get key's value
+//                                String value = networkMap.get(key);
+//
+//                                // split value into lines to count number of lines
+//                                String[] valueLines = value.split("\n");
+//
+//                                // send 'VALUE' and the number of lines
+//                                serverWrite(writer, "VALUE " + valueLines.length);
+//                                serverWrite(writer, value); // Then the actual value
+//                            } else {
+//                                // if not, send 'NOPE'
+//                                serverWrite(writer, "NOPE");
+//                            }
+//                        } else if (request.equals("NEAREST?")) {
+//                            // handle NEAREST request
+//                            // for now dummy response
+//                            serverWrite(writer, "NODES 1");
+//                            serverWrite(writer, "Dummy Node Name");
+//                            serverWrite(writer, "Dummy Node Address");
+//
+//                        } else if (request.equals("ECHO?")) {
+//                            // send reverse
+//                            serverWrite(writer, "OHCE");
+//
+//                        } else if (request.equals("END")) {
+//                            serverWrite(writer, "END");
+//                            return;
+//
+//                        } else {
+//                            // invalid request
+//                            serverWrite(writer, "INVALID");
+//                            System.out.println("Invalid Request: " + request);
+//                            serverWrite(writer, "END");
+//                            return;
+//                        }
+//
+//                        // Reset the requestBuilder for the next request
+//                        requestBuilder.setLength(0);
+//                    } else {
+//                        requestBuilder.append(line).append("\n");
+//                    }
+//                }
+//
+//            } catch (SocketException e) {
+//                // connection reset by client
+//                System.err.println("Problem with the socket: " + e.getMessage());
+//            }
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (Exception e) {
+//            throw new RuntimeException(e);
+//        }
+//    }
 
     private boolean isClosestNode(String valueHashID) {
         // get the distances between valueHashID and hashIDs of nodes in the network map

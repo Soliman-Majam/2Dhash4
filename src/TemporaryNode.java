@@ -57,15 +57,11 @@ public class TemporaryNode implements TemporaryNodeInterface {
             System.out.println("Is socket connected? " + socket.isConnected());
 
             // START message
-            clientWrite(writer,"START 1 " + this.name); //  IT GOES UP TO HERE
+            clientWrite(writer,"START 1 " + this.name);
             System.out.println("did you see the start message?");
 
             // wait until receives "START" response
             String response = reader.readLine();
-            /*String startParts[] = response.split(" ");
-            String startPart1 = startParts[0];
-            String startPart2 = startParts[1];
-            String startPart3 = startParts[2];*/
             if (response != null && response.startsWith("START")) {
                 return true;
             }
@@ -153,10 +149,10 @@ public class TemporaryNode implements TemporaryNodeInterface {
         return inp;
     }
 
-    public static void main(String[] args) {
-        TemporaryNode tn = new TemporaryNode();
-        if(tn.start("SolimanMajam@city.ac.uk", "172.27.16.1:2345")){
-            tn.store("hello\n", "world\n");
-        }
-    }
+//    public static void main(String[] args) {
+//        TemporaryNode tn = new TemporaryNode();
+//        if(tn.start("SolimanMajam@city.ac.uk", "172.27.16.1:2345")){
+//            tn.store("hello\n", "world\n");
+//        }
+//    }
 }
