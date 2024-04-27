@@ -72,6 +72,7 @@ public class FullNode implements FullNodeInterface {
             socket.bind(new InetSocketAddress(ipAddress, portNumber));
             System.out.println("Server socket created");
             Socket clientSocket = socket.accept();
+            System.out.println("Client socket created");
             writer = new OutputStreamWriter(clientSocket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
             // START message
@@ -80,6 +81,7 @@ public class FullNode implements FullNodeInterface {
             // wait until receives 'START' response
             String response = in.readLine();
             if (response != null && response.startsWith("START ")) {
+                System.out.println("Message accepted");
                 // sned 'NOTIFY' request
                 serverWrite(writer, "NOTIFY");
                 serverWrite(writer, this.name);
@@ -92,10 +94,10 @@ public class FullNode implements FullNodeInterface {
                     this.networkMap = new HashMap<>();
                     this.networkMap.put(startingNodeName, startingNodeAddress);
 
-                    handleConnection(clientSocket);
+                    handleRequests(clientSocket);
                 }
-                System.out.println("Now handling connection" + '\n');
-                handleConnection(clientSocket);
+                System.out.println("Connection established, ready for incoming requests: " + '\n');
+                handleRequests(clientSocket);
             }
 
             // end connection
@@ -106,15 +108,19 @@ public class FullNode implements FullNodeInterface {
         }
     }
 
-    private void handleConnection(Socket clientSocket) {
+    private void handleRequests(Socket clientSocket) {
         try {
 
             writer = new OutputStreamWriter(clientSocket.getOutputStream());
             in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
-            // different request possibilities
-            String request;
-            while ((request = in.readLine()) != null) {
+            StringBuilder requestBuilder = new StringBuilder();
+            String line;
+            while ((line = in.readLine()) != null) {
+                requestBuilder.append(line).append("\n");
+
+                // Check if the request is complete
+                String request = requestBuilder.toString().trim();
 
                 // if 'PUT?' request then
                 if (request.startsWith("PUT? ")) {
@@ -151,23 +157,19 @@ public class FullNode implements FullNodeInterface {
 
                     } else {
                         // "FAILED" as this node is not one of three closest nodes
-                        //out.println("FAILED");
                         serverWrite(writer, "FAILED");
                     }
 
-                }else if (request.startsWith("GET? ")) {
+                } else if (request.startsWith("GET? ")) {
                     System.out.println(request);
                     String[] parts = request.split(" ");
                     int keyLines = Integer.parseInt(parts[1]);
 
-                    // consume newline character
-                    in.readLine();
-
                     StringBuilder keyBuilder = new StringBuilder();
-                    for (int i = 0; i < keyLines; i++) {
-                        keyBuilder.append(in.readLine()).append("\n");
+                    String[] requestLines = requestBuilder.toString().split("\n");
+                    for (int i = 1; i <= keyLines; i++) {
+                        keyBuilder.append(requestLines[i]).append("\n");
                     }
-                    // save read key as String
                     String key = keyBuilder.toString().trim(); // trim to remove newline
 
                     // check if key exists in network map
@@ -186,8 +188,8 @@ public class FullNode implements FullNodeInterface {
                         serverWrite(writer, "NOPE");
                     }
                 } else if (request.equals("NEAREST?")) {
-                    // Handle NEAREST request
-                    // For simplicity, assume it returns a dummy response
+                    // handle NEAREST request
+                    // for now assume it returns a dummy response
                     serverWrite(writer,"NODES 1");
                     serverWrite(writer,"Dummy Node Name");
                     serverWrite(writer,"Dummy Node Address");

@@ -47,15 +47,14 @@ public class TemporaryNode implements TemporaryNodeInterface {
             System.out.println("IP Address: " + ipAddress + ", port number: " + portNumber + ". SUCCESS");
 
             // initializing values for socket (socket object), out by reading output stream and in reading input stream
-            this.socket = new Socket(host, portNumber);
+            socket = new Socket(host, portNumber);
             System.out.println(" TEMP Socket created");
-            this.writer = new OutputStreamWriter(socket.getOutputStream());
+            writer = new OutputStreamWriter(socket.getOutputStream());
             System.out.println("TEMP Output stream..");
-            this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             System.out.println("TEMP Input stream..");
-            System.out.println("SUCCESS");
 
-            System.out.println(socket.isConnected());
+            System.out.println("Is socket connected? " + socket.isConnected());
 
             // START message
             clientWrite(writer,"START 1 " + this.name); //  IT GOES UP TO HERE
@@ -108,9 +107,6 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
             // Send the GET? request
             clientWrite(writer, "GET? " + keyLines.length);
-
-            // Send a newline character before sending the key lines
-            clientWrite(writer, "");
 
             for (String line : keyLines) {
                 clientWrite(writer, line);
