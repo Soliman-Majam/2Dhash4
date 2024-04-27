@@ -31,7 +31,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
     public boolean start(String startingNodeName, String startingNodeAddress) {
         try {
             // name of tempnode
-            this.name = "happytempnode:FirstNewTempNodeTest,1.0";
+            this.name = "happytempnode@city.ac.uk:FirstNewTempNodeTest,1.0";
 
             System.out.println("Address passed to TempNode: " + startingNodeAddress);
 
@@ -154,20 +154,10 @@ public class TemporaryNode implements TemporaryNodeInterface {
         return inp;
     }
 
-    public static void delayMethod(int seconds) {
-        try {
-            // Convert seconds to milliseconds (1 second = 1000 milliseconds)
-            Thread.sleep(seconds * 1000);
-        } catch (InterruptedException e) {
-            // Handle interruption if needed
-            e.printStackTrace();
+    public static void main(String[] args) {
+        TemporaryNode tn = new TemporaryNode();
+        if(tn.start("happytempnode:FirstNewTempNodeTest,1.0", "127.0.0.1:20000")){
+            tn.store("hello\n", "world\n");
         }
     }
-
-//    public static void main(String[] args) {
-//        TemporaryNode tn = new TemporaryNode();
-//        if(tn.start("SolimanMajam@city.ac.uk", "172.27.16.1:2345")){
-//            tn.store("hello\n", "world\n");
-//        }
-//    }
 }
