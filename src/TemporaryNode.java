@@ -73,19 +73,24 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
     public boolean store(String key, String value) {
         try {
-            // send PUT with key and value
-            System.out.println("enter put request: ");
-            String putInput = readInput();
-            String putParts[] = putInput.split(" ");
-            String keyNumberS = putParts[1];
-            String valNumberS = putParts[2];
+            // split key & value into lines
+            String[] keyLines = key.split("\n");
+            String[] valueLines = value.split("\n");
 
-            clientWrite(writer, "PUT? " + keyNumberS + " " + valNumberS);
-            clientWrite(writer, key);
-            clientWrite(writer, value);
+            // send first line of PUT request
+            clientWrite(writer, "PUT? " + keyLines.length + " " + valueLines.length);
 
+            // send key line/s
+            for (String line : keyLines) {
+                clientWrite(writer, line);
+            }
 
-            // wait until receives "SUCCESS" response
+            // send value line/s
+            for (String line : valueLines) {
+                clientWrite(writer, line);
+            }
+
+            // wait for the response
             String response = reader.readLine();
             if (response != null && response.equals("SUCCESS")) {
                 return true;
@@ -101,6 +106,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
             // Split the key into lines
             String[] keyLines = key.split("\n");
 
+            delayMethod(3);
             // Send the GET? request
             clientWrite(writer, "GET? " + keyLines.length);
 
@@ -131,7 +137,6 @@ public class TemporaryNode implements TemporaryNodeInterface {
     }
 
     private boolean clientWrite(Writer writer, String message) {
-
         try {
             writer.write(message + '\n');
             System.out.println(name + ": " + message);
@@ -147,6 +152,16 @@ public class TemporaryNode implements TemporaryNodeInterface {
         Scanner input = new Scanner(System.in);
         String inp = input.nextLine();
         return inp;
+    }
+
+    public static void delayMethod(int seconds) {
+        try {
+            // Convert seconds to milliseconds (1 second = 1000 milliseconds)
+            Thread.sleep(seconds * 1000);
+        } catch (InterruptedException e) {
+            // Handle interruption if needed
+            e.printStackTrace();
+        }
     }
 
 //    public static void main(String[] args) {
