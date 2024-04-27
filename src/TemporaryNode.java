@@ -78,17 +78,8 @@ public class TemporaryNode implements TemporaryNodeInterface {
             String[] valueLines = value.split("\n");
 
             // send first line of PUT request
-            clientWrite("PUT? " + keyLines.length + " " + valueLines.length);
+            clientWrite("PUT? " + keyLines.length + " " + valueLines.length + "\n" + key + value);
 
-            // send key line/s
-            for (String line : keyLines) {
-                clientWrite(line);
-            }
-
-            // send value line/s
-            for (String line : valueLines) {
-                clientWrite(line);
-            }
 
             // wait for the response
             String response = reader.readLine();
@@ -108,11 +99,11 @@ public class TemporaryNode implements TemporaryNodeInterface {
             String[] keyLines = key.split("\n");
 
             // Send the GET? request
-            clientWrite("GET? " + keyLines.length);
+            clientWrite("GET? " + keyLines.length + "\n" + key);
 
-            for (String line : keyLines) {
-                clientWrite(line);
-            }
+//            for (String line : keyLines) {
+//                clientWrite(line);
+//            }
 
             // Wait for the response
             String response = reader.readLine();
@@ -158,6 +149,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
         TemporaryNode tn = new TemporaryNode();
         if(tn.start("happytempnode:FirstNewTempNodeTest,1.0", "127.0.0.1:20000")){
             tn.store("hello\n", "world\n");
+            tn.get("hello\n");
         }
     }
 }

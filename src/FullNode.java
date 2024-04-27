@@ -32,6 +32,7 @@ public class FullNode implements FullNodeInterface {
     private BufferedReader in;
     private ServerSocket server;
     private Socket clientSocket;
+    private String startingNodeName, startingNodeAddress;
 
     public boolean listen(String ipAddress, int portNumber) {
         try {
@@ -56,6 +57,9 @@ public class FullNode implements FullNodeInterface {
             System.out.println("Handling connection..");
             // name of node
             this.name = "Soliman.Majam@city.ac.uk:FirstNewFullNodeTest,1.0";
+
+            this.startingNodeName = startingNodeName;
+            this.startingNodeAddress = startingNodeAddress;
 
             // connect to node nad let other nodes know
             // address made up of ip address and port number
@@ -84,18 +88,13 @@ public class FullNode implements FullNodeInterface {
             String response = in.readLine();
             if (response != null && response.startsWith("START ")) {
                 System.out.println("Message accepted");
+
+                System.out.println("Connection established, ready for incoming requests: " + '\n');
                 // sned 'NOTIFY' request
                 serverWrite("NOTIFY");
                 serverWrite(this.name);
                 serverWrite(this.address);
 
-                // wait until receives 'NOTIFIED' response
-                response = in.readLine();
-                if (response != null && response.equals("NOTIFIED")) {
-                    // if response successful, initialize that network hash map and add the connected node to it
-                    networkMap.put(startingNodeName, startingNodeAddress);
-                }
-                System.out.println("Connection established, ready for incoming requests: " + '\n');
                 requestHandler();
             }
 
@@ -195,7 +194,10 @@ public class FullNode implements FullNodeInterface {
                     // send reverse
                     serverWrite("OHCE");
 
-                } else if (line.equals("END")) {
+                } else if (line.equals("NOTIFIED")) {
+                    // if response successful, initialize that network hash map and add the connected node to it
+                    networkMap.put(startingNodeName, startingNodeAddress);
+                }else if (line.equals("END")) {
                     serverWrite("END");
                     return;
                 }
