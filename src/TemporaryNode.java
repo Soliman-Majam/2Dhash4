@@ -122,7 +122,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
             } else if (response != null && response.equals("NOPE")) {
                 //if response is "NOPE", means key not found
-                String hashedKey = HashID.computeHashID(key);
+                String hashedKey = HashID.computeHashID(key + '\n');
                 clientWrite("NEAREST? " + hashedKey);
 
                 // wait for NODES response
