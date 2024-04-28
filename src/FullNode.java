@@ -195,7 +195,7 @@ public class FullNode implements FullNodeInterface {
                         serverWrite("END");
                     }
                 }
-                else if (line.equals("NEAREST?")) {
+                else if (line.startsWith("NEAREST?")) {
                     // get hashID from request
                     String[] parts = line.split(" ");
                     if (parts.length == 2) {
