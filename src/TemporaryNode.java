@@ -95,20 +95,16 @@ public class TemporaryNode implements TemporaryNodeInterface {
     public String get(String key) {
         try {
 
-            // Split the key into lines
+            // split key into lines
             String[] keyLines = key.split("\n");
 
-            // Send the GET? request
+            // send GET? request
             clientWrite("GET? " + keyLines.length + "\n" + key);
 
-//            for (String line : keyLines) {
-//                clientWrite(line);
-//            }
-
-            // Wait for the response
+            // Wait for response
             String response = reader.readLine();
 
-            // If the response starts with "VALUE", read the value
+            // if response starts with "VALUE", read it
             if (response != null && response.startsWith("VALUE")) {
                 String[] parts = response.split(" ");
                 int valueLines = Integer.parseInt(parts[1]);
@@ -117,12 +113,45 @@ public class TemporaryNode implements TemporaryNodeInterface {
                     valueBuilder.append(reader.readLine()).append("\n");
                 }
                 return valueBuilder.toString().trim();
+
             } else if (response != null && response.equals("NOPE")) {
-                // If the response is "NOPE", the key was not found
+                //if response is "NOPE", means key not found
+                String hashedKey = HashID.computeHashID(key);
+                clientWrite("NEAREST? " + hashedKey);
+
+                // wait for NODES response
+                response = reader.readLine();
+                if (response != null && response.startsWith("NODES ")) {
+                    String[] parts = response.split(" ");
+                    int nodeLines = Integer.parseInt(parts[1]);
+
+                    List<String> closerNodes = new ArrayList<>();
+                    for (int i = 0; i < nodeLines; i++) {
+                        String node = reader.readLine();
+                        closerNodes.add(node);
+                    }
+
+                    // recursive call to TemporaryNode, attempt to connect to node with start, then get statement
+                    for (String nearestNode : closerNodes) {
+                        String[] nodeParts = nearestNode.split(":");
+                        String nearestNodeName = nodeParts[0];
+                        String nearestNodeAddress = nodeParts[1];
+
+                        TemporaryNode ourNearestSoldier = new TemporaryNode();
+                        if (ourNearestSoldier.start(nearestNodeName, nearestNodeAddress)) {
+                            String value = ourNearestSoldier.get(key);
+                            if (value != null) {
+                                return value;
+                            }
+                        }
+                    }
+                }
                 return null;
             }
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         return null;
     }

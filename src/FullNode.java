@@ -184,12 +184,26 @@ public class FullNode implements FullNodeInterface {
                     }
                 }
                 else if (line.equals("NEAREST?")) {
-                    // handle NEAREST request
-                    // for now returns a dummy response
-                    serverWrite("NODES 1");
-                    serverWrite("Dummy Node Name");
-                    serverWrite("Dummy Node Address");
+                    // get hashID from request
+                    String[] parts = line.split(" ");
+                    if (parts.length == 2) {
+                        String hashID = parts[1];
 
+                        // find three closest nodes to given hashID
+                        List<String> closestNodes = findClosestNodes(hashID);
+
+                        // send NODES response
+                        serverWrite("NODES " + closestNodes.size());
+                        for (String node : closestNodes) {
+                            String[] nodeParts = node.split(":");
+                            serverWrite(nodeParts[0]); // node name
+                            serverWrite(nodeParts[1]); // node address
+                        }
+                    } else {
+                        // invalid NEAREST? request format
+                        serverWrite("INVALID");
+                        System.out.println("Invalid NEAREST? request: " + line);
+                    }
                 } else if (line.equals("ECHO?")) {
                     // send reverse
                     serverWrite("OHCE");
@@ -197,6 +211,7 @@ public class FullNode implements FullNodeInterface {
                 } else if (line.equals("NOTIFIED")) {
                     // if response successful, initialize that network hash map and add the connected node to it
                     networkMap.put(startingNodeName, startingNodeAddress);
+                    System.out.println("Network map updated");
                 }else if (line.equals("END")) {
                     serverWrite("END");
                     return;
@@ -246,17 +261,6 @@ public class FullNode implements FullNodeInterface {
 
         // if count is less than 3, current node is one of three closest nodes
         return count < 3;
-    }
-
-    // hex String to byte array conversion method
-    private byte[] hexStringToByteArray(String s) {
-        int len = s.length();
-        byte[] data = new byte[len / 2];
-        for (int i = 0; i < len; i += 2) {
-            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
-                    + Character.digit(s.charAt(i + 1), 16));
-        }
-        return data;
     }
 
     private int calculateDistance(String hashID1, String hashID2) {
@@ -320,6 +324,41 @@ public class FullNode implements FullNodeInterface {
             e.printStackTrace();
             return false;
         }
+    }
+
+    private List<String> findClosestNodes(String hashID) {
+        List<String> closestNodes = new ArrayList<>();
+        Map<Integer, List<String>> distances = new HashMap<>();
+
+        // calculate distance between given hashID and evevery node in network map
+        for (Map.Entry<String, String> entry : networkMap.entrySet()) {
+            String nodeName = entry.getKey();
+            int distance = calculateDistance(hashID, nodeName);
+
+            // add node to corresponding distance list
+            List<String> nodeList = distances.computeIfAbsent(distance, k -> new ArrayList<>());
+            nodeList.add(nodeName + ":" + entry.getValue()); // store node name and address together
+        }
+
+        // sort distance map by distance ascending
+        List<Integer> sortedDistances = new ArrayList<>(distances.keySet());
+        Collections.sort(sortedDistances);
+
+        // add first three unique nodes to closestNodes list
+        int count = 0;
+        for (int distance : sortedDistances) {
+            List<String> nodes = distances.get(distance);
+            for (String node : nodes) {
+                if (!closestNodes.contains(node)) {
+                    closestNodes.add(node);
+                    count++;
+                    if (count == 3) {
+                        return closestNodes;
+                    }
+                }
+            }
+        }
+        return closestNodes;
     }
 
     public static void main(String[] args) {
