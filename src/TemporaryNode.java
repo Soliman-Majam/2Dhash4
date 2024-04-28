@@ -77,6 +77,8 @@ public class TemporaryNode implements TemporaryNodeInterface {
             String[] keyLines = key.split("\n");
             String[] valueLines = value.split("\n");
 
+            value = value.replaceAll("\\n$", "");
+
             // send first line of PUT request
             clientWrite("PUT? " + keyLines.length + " " + valueLines.length + "\n" + key + value);
 
@@ -84,6 +86,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
             // wait for the response
             String response = reader.readLine();
             if (response != null && response.equals("SUCCESS")) {
+                //clientWrite("END");
                 return true;
             }
         } catch (IOException e) {
@@ -97,6 +100,8 @@ public class TemporaryNode implements TemporaryNodeInterface {
 
             // split key into lines
             String[] keyLines = key.split("\n");
+
+            key = key.replaceAll("\\n$", "");
 
             // send GET? request
             clientWrite("GET? " + keyLines.length + "\n" + key);
@@ -112,6 +117,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
                 for (int i = 0; i < valueLines; i++) {
                     valueBuilder.append(reader.readLine()).append("\n");
                 }
+                //clientWrite("END");
                 return valueBuilder.toString().trim();
 
             } else if (response != null && response.equals("NOPE")) {
@@ -145,8 +151,8 @@ public class TemporaryNode implements TemporaryNodeInterface {
                             }
                         }
                     }
-                }
-                return null;
+                } return null;
+
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -155,6 +161,7 @@ public class TemporaryNode implements TemporaryNodeInterface {
         }
         return null;
     }
+
 
     private boolean clientWrite(String message) {
         try {

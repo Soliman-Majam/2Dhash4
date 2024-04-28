@@ -117,70 +117,82 @@ public class FullNode implements FullNodeInterface {
                 if (line.startsWith("PUT? ")) {
                     // read values and keys
                     String[] parts = line.split(" ");
-                    int keyLines = Integer.parseInt(parts[1]);
-                    int valueLines = Integer.parseInt(parts[2]);
+                    if (parts.length == 3) {
+                        int keyLines = Integer.parseInt(parts[1]);
+                        int valueLines = Integer.parseInt(parts[2]);
 
-                    StringBuilder keyBuilder = new StringBuilder();
-                    StringBuilder valueBuilder = new StringBuilder();
+                        StringBuilder keyBuilder = new StringBuilder();
+                        StringBuilder valueBuilder = new StringBuilder();
 
-                    for (int i = 0; i < keyLines; i++) {
-                        keyBuilder.append(in.readLine()).append("\n");
-                    }
-                    for (int i = 0; i < valueLines; i++) {
-                        valueBuilder.append(in.readLine()).append("\n");
-                    }
+                        for (int i = 0; i < keyLines; i++) {
+                            keyBuilder.append(in.readLine()).append("\n");
+                        }
+                        for (int i = 0; i < valueLines; i++) {
+                            valueBuilder.append(in.readLine()).append("\n");
+                        }
 
-                    String key = keyBuilder.toString();
-                    String value = valueBuilder.toString();
+                        String key = keyBuilder.toString();
+                        String value = valueBuilder.toString();
 
 
-                    // compute hashID for the value to be stored
-                    String valueHashID;
-                    try {
-                        valueHashID = HashID.computeHashID(value);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
+                        // compute hashID for the value to be stored
+                        String valueHashID;
+                        try {
+                            valueHashID = HashID.computeHashID(value);
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
 
-                    // check networkMap for if valueHashID is one of the closest nodes
-                    boolean isClosest = isClosestNode(valueHashID);
+                        // check networkMap for if valueHashID is one of the closest nodes
+                        boolean isClosest = isClosestNode(valueHashID);
 
-                    if (isClosest) {
-                        // check if 3 nodes don't already have the same distance
-                        addToMap(key, value);
-                        serverWrite("SUCCESS");
+                        if (isClosest) {
+                            // check if 3 nodes don't already have the same distance
+                            addToMap(key, value);
+                            serverWrite("SUCCESS");
 
+                        } else {
+                            // "FAILED" as this node is not one of three closest nodes
+                            serverWrite("FAILED");
+                        }
                     } else {
-                        // "FAILED" as this node is not one of three closest nodes
-                        serverWrite("FAILED");
+                        serverWrite("INVALID");
+                        System.out.println("Invalid PUT? request: " + line);
+                        serverWrite("END");
                     }
 
                 } else if (line.startsWith("GET? ")) {
                     System.out.println(line);
                     String[] parts = line.split(" ");
-                    int keyLines = Integer.parseInt(parts[1]);
+                    if (parts.length == 2) {
+                        int keyLines = Integer.parseInt(parts[1]);
 
-                    StringBuilder keyBuilder = new StringBuilder();
+                        StringBuilder keyBuilder = new StringBuilder();
 
-                    for (int i = 0; i < keyLines; i++) {
-                        keyBuilder.append(in.readLine()).append("\n");
-                    }
-                    String key = keyBuilder.toString(); // trim to remove newline
+                        for (int i = 0; i < keyLines; i++) {
+                            keyBuilder.append(in.readLine()).append("\n");
+                        }
+                        String key = keyBuilder.toString(); // trim to remove newline
 
-                    // check if key exists in network map
-                    if (networkMap.containsKey(key)) {
-                        // if true get key's value
-                        String value = networkMap.get(key);
+                        // check if key exists in network map
+                        if (networkMap.containsKey(key)) {
+                            // if true get key's value
+                            String value = networkMap.get(key);
 
-                        // split value into lines to count number of lines
-                        String[] valueLines = value.split("\n");
+                            // split value into lines to count number of lines
+                            String[] valueLines = value.split("\n");
 
-                        // send 'VALUE' and the number of lines
-                        serverWrite("VALUE " + valueLines.length);
-                        serverWrite(value); // then the actual value
+                            // send 'VALUE' and the number of lines
+                            serverWrite("VALUE " + valueLines.length);
+                            serverWrite(value); // then the actual value
+                        } else {
+                            // if not send 'NOPE'
+                            serverWrite("NOPE");
+                        }
                     } else {
-                        // if not send 'NOPE'
-                        serverWrite("NOPE");
+                        serverWrite("INVALID");
+                        System.out.println("Invalid GET? request: " + line);
+                        serverWrite("END");
                     }
                 }
                 else if (line.equals("NEAREST?")) {
@@ -200,9 +212,11 @@ public class FullNode implements FullNodeInterface {
                             serverWrite(nodeParts[1]); // node address
                         }
                     } else {
-                        // invalid NEAREST? request format
+                        // invalid GET? request format
                         serverWrite("INVALID");
                         System.out.println("Invalid NEAREST? request: " + line);
+                        serverWrite("END");
+                        return;
                     }
                 } else if (line.equals("ECHO?")) {
                     // send reverse
